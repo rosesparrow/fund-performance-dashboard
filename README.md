@@ -112,7 +112,7 @@ An important caveat: all funds in the analysis are retail-accessible proxies (mu
 
 ## Live dashboard
 
-The Streamlit dashboard is deployed at: *[add URL after deployment]*
+The Streamlit dashboard is deployed at: [fund-performance-dashboard.streamlit.app](https://rs-fund-performance-dashboard.streamlit.app)
 
 ---
 
