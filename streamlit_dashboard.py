@@ -161,15 +161,29 @@ def load_data(start_date, end_date):
             end=end_date,
             interval="1mo",
             progress=False,
-        )["Close"]
+        )
+
+        # Handle both MultiIndex and flat column formats from yfinance
+        if isinstance(prices.columns, pd.MultiIndex):
+            prices = prices["Close"]
+        elif "Close" in prices.columns:
+            prices = prices[["Close"]]
+            prices.columns = prices.columns.droplevel(0) if isinstance(prices.columns, pd.MultiIndex) else prices.columns
+
+        # Drop any columns that are entirely NaN (failed ticker downloads)
+        prices = prices.dropna(axis=1, how="all")
 
         ticker_to_name = {v: k for k, v in tickers.items()}
-        prices.columns = [ticker_to_name[col] for col in prices.columns]
+        prices.columns = [ticker_to_name.get(col, col) for col in prices.columns]
         returns_df = prices.pct_change().dropna()
+
+        # Check we actually got data
+        if len(returns_df) == 0:
+            return None, "No return data after processing. Check date range and ticker availability."
 
         # Reorder: funds first, benchmark last
         cols = [c for c in returns_df.columns if c != "Global Equity Index"] + ["Global Equity Index"]
-        returns_df = returns_df[cols]
+        returns_df = returns_df[[c for c in cols if c in returns_df.columns]]
         return returns_df, None
 
     except Exception as e:
@@ -179,6 +193,11 @@ def load_data(start_date, end_date):
 def calc_metrics(r, bench, rf):
     """Calculate all metrics for a single fund."""
     n = len(r)
+    if n == 0:
+        return {k: 0 for k in ["Annualised Return", "Annualised Volatility", "Sharpe Ratio",
+                "Sortino Ratio", "Max Drawdown", "Calmar Ratio", "VaR (95%, 1M)",
+                "CVaR (95%, 1M)", "Win Rate", "Best Month", "Worst Month",
+                "Beta", "Alpha", "Tracking Error", "Information Ratio"]}
     ann_ret = (1 + r).prod() ** (12 / n) - 1
     ann_vol = r.std() * np.sqrt(12)
     dv = r[r < 0].std() * np.sqrt(12)
