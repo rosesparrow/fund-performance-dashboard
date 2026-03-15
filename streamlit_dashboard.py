@@ -397,7 +397,7 @@ st.plotly_chart(fig_cal, use_container_width=True)
 
 # Year table
 st.dataframe(
-    yearly.style.format("{:.1%}").applymap(
+    yearly.style.format("{:.1%}").map(
         lambda v: f"color: {GREEN}" if v > 0 else f"color: {RED}"),
     use_container_width=True, height=200,
 )
